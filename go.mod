@@ -8,6 +8,7 @@ require (
 	github.com/fasthttp/router v1.4.22
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-chi/chi/v4 v4.1.3
+	github.com/go-chi/chi/v5 v5.0.12
 	github.com/gorilla/mux v1.8.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/justinas/alice v1.2.0

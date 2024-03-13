@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/slok/go-http-metrics/metrics"
 )
 
@@ -32,6 +33,8 @@ type Config struct {
 	// DisableMeasureInflight will disable the recording metrics about the inflight requests number,
 	// by default measuring inflights is enabled (`DisableMeasureInflight` is false).
 	DisableMeasureInflight bool
+	// UseChi will use the chi router to get the handler ID, by default it will be false.
+	UseChi bool
 }
 
 func (c *Config) defaults() {
@@ -49,6 +52,10 @@ func (c *Config) defaults() {
 // to measure.
 type Middleware struct {
 	cfg Config
+}
+
+func (m Middleware) Config() Config {
+	return m.cfg
 }
 
 // New returns the a Middleware service.
@@ -97,6 +104,11 @@ func (m Middleware) Measure(handlerID string, reporter Reporter, next func()) {
 			code = fmt.Sprintf("%dxx", reporter.StatusCode()/100)
 		} else {
 			code = strconv.Itoa(reporter.StatusCode())
+		}
+
+		// try to get hid from chi context
+		if hid == "" {
+			hid = chi.RouteContext(reporter.Context()).RoutePattern()
 		}
 
 		props := metrics.HTTPReqProperties{

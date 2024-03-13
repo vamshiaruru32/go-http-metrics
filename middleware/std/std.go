@@ -8,8 +8,27 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/slok/go-http-metrics/middleware"
 )
+
+type ChiReporter struct {
+	r *http.Request
+	w *responseWriterInterceptor
+}
+
+func (c *ChiReporter) Method() string { return c.r.Method }
+
+func (c *ChiReporter) Context() context.Context { return c.r.Context() }
+
+func (c *ChiReporter) URLPath() string {
+	// get from chi context
+	return chi.RouteContext(c.r.Context()).RoutePattern()
+}
+
+func (c *ChiReporter) StatusCode() int { return c.w.statusCode }
+
+func (c *ChiReporter) BytesWritten() int64 { return int64(c.w.bytesWritten) }
 
 // Handler returns an measuring standard http.Handler.
 func Handler(handlerID string, m middleware.Middleware, h http.Handler) http.Handler {
@@ -18,11 +37,17 @@ func Handler(handlerID string, m middleware.Middleware, h http.Handler) http.Han
 			statusCode:     http.StatusOK,
 			ResponseWriter: w,
 		}
-		reporter := &stdReporter{
+		var reporter middleware.Reporter
+		reporter = &stdReporter{
 			w: wi,
 			r: r,
 		}
-
+		if m.Config().UseChi {
+			reporter = &ChiReporter{
+				r: r,
+				w: wi,
+			}
+		}
 		m.Measure(handlerID, reporter, func() {
 			h.ServeHTTP(wi, r)
 		})
