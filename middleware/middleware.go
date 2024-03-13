@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/slok/go-http-metrics/metrics"
 )
 
@@ -106,10 +105,7 @@ func (m Middleware) Measure(handlerID string, reporter Reporter, next func()) {
 			code = strconv.Itoa(reporter.StatusCode())
 		}
 
-		// try to get hid from chi context
-		if hid == "" {
-			hid = chi.RouteContext(reporter.Context()).RoutePattern()
-		}
+		hid = reporter.URLPath()
 
 		props := metrics.HTTPReqProperties{
 			Service: m.cfg.Service,
