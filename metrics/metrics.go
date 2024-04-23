@@ -15,7 +15,8 @@ type HTTPReqProperties struct {
 	// Method is the method of the request.
 	Method string
 	// Code is the response of the request.
-	Code string
+	Code    string
+	OrgSlug string
 }
 
 // HTTPProperties are the metric properties for the global server metrics.

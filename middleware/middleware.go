@@ -33,7 +33,8 @@ type Config struct {
 	// by default measuring inflights is enabled (`DisableMeasureInflight` is false).
 	DisableMeasureInflight bool
 	// UseChi will use the chi router to get the handler ID, by default it will be false.
-	UseChi bool
+	UseChi            bool
+	OrgSlugContextKey any
 }
 
 func (c *Config) defaults() {
@@ -106,12 +107,17 @@ func (m Middleware) Measure(handlerID string, reporter Reporter, next func()) {
 		}
 
 		hid = reporter.URLPath()
+		orgSlug, ok := reporter.Context().Value(m.cfg.OrgSlugContextKey).(string)
+		if !ok {
+			orgSlug = ""
+		}
 
 		props := metrics.HTTPReqProperties{
 			Service: m.cfg.Service,
 			ID:      hid,
 			Method:  reporter.Method(),
 			Code:    code,
+			OrgSlug: orgSlug,
 		}
 		m.cfg.Recorder.ObserveHTTPRequestDuration(ctx, props, duration)
 

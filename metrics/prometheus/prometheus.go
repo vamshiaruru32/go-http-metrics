@@ -30,6 +30,7 @@ type Config struct {
 	MethodLabel string
 	// ServiceLabel is the name that will be set to the service label, by default is `service`.
 	ServiceLabel string
+	OrgLabel     string
 }
 
 func (c *Config) defaults() {
@@ -60,6 +61,10 @@ func (c *Config) defaults() {
 	if c.ServiceLabel == "" {
 		c.ServiceLabel = "service"
 	}
+
+	if c.OrgLabel == "" {
+		c.OrgLabel = "organisation"
+	}
 }
 
 type recorder struct {
@@ -80,7 +85,13 @@ func NewRecorder(cfg Config) metrics.Recorder {
 			Name:      "request_duration_seconds",
 			Help:      "The latency of the HTTP requests.",
 			Buckets:   cfg.DurationBuckets,
-		}, []string{cfg.ServiceLabel, cfg.HandlerIDLabel, cfg.MethodLabel, cfg.StatusCodeLabel}),
+		}, []string{
+			cfg.ServiceLabel,
+			cfg.HandlerIDLabel,
+			cfg.MethodLabel,
+			cfg.StatusCodeLabel,
+			cfg.OrgLabel,
+		}),
 
 		httpResponseSizeHistogram: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: cfg.Prefix,
@@ -88,7 +99,13 @@ func NewRecorder(cfg Config) metrics.Recorder {
 			Name:      "response_size_bytes",
 			Help:      "The size of the HTTP responses.",
 			Buckets:   cfg.SizeBuckets,
-		}, []string{cfg.ServiceLabel, cfg.HandlerIDLabel, cfg.MethodLabel, cfg.StatusCodeLabel}),
+		}, []string{
+			cfg.ServiceLabel,
+			cfg.HandlerIDLabel,
+			cfg.MethodLabel,
+			cfg.StatusCodeLabel,
+			cfg.OrgLabel,
+		}),
 
 		httpRequestsInflight: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: cfg.Prefix,
@@ -108,11 +125,11 @@ func NewRecorder(cfg Config) metrics.Recorder {
 }
 
 func (r recorder) ObserveHTTPRequestDuration(_ context.Context, p metrics.HTTPReqProperties, duration time.Duration) {
-	r.httpRequestDurHistogram.WithLabelValues(p.Service, p.ID, p.Method, p.Code).Observe(duration.Seconds())
+	r.httpRequestDurHistogram.WithLabelValues(p.Service, p.ID, p.Method, p.Code, p.OrgSlug).Observe(duration.Seconds())
 }
 
 func (r recorder) ObserveHTTPResponseSize(_ context.Context, p metrics.HTTPReqProperties, sizeBytes int64) {
-	r.httpResponseSizeHistogram.WithLabelValues(p.Service, p.ID, p.Method, p.Code).Observe(float64(sizeBytes))
+	r.httpResponseSizeHistogram.WithLabelValues(p.Service, p.ID, p.Method, p.Code, p.OrgSlug).Observe(float64(sizeBytes))
 }
 
 func (r recorder) AddInflightRequests(_ context.Context, p metrics.HTTPProperties, quantity int) {
