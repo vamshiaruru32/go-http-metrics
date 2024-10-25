@@ -34,9 +34,9 @@ type Config struct {
 	// by default measuring inflights is enabled (`DisableMeasureInflight` is false).
 	DisableMeasureInflight bool
 	// UseChi will use the chi router to get the handler ID, by default it will be false.
-	UseChi                 bool
-	OrgSlugPathParamKey    string
-	ShouldReportMetricsKey *string
+	UseChi              bool
+	OrgSlugPathParamKey string
+	ShouldReportMetrics func(ctx context.Context) bool
 }
 
 func (c *Config) defaults() {
@@ -97,12 +97,8 @@ func (m Middleware) Measure(handlerID string, reporter Reporter, next func()) {
 	start := time.Now()
 	defer func() {
 		duration := time.Since(start)
-		if m.cfg.ShouldReportMetricsKey != nil {
-			shouldShow, ok := reporter.Context().Value(*m.cfg.ShouldReportMetricsKey).(bool)
-			if ok && !shouldShow {
-				// no need to send metrics
-				return
-			}
+		if m.cfg.ShouldReportMetrics != nil && !m.cfg.ShouldReportMetrics(reporter.Context()) {
+			return
 		}
 
 		// If we need to group the status code, it uses the
